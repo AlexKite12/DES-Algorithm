@@ -102,13 +102,23 @@ class des():
                     34, 2, 42, 10, 50, 18, 58, 26,
                     33, 1, 41, 9, 49, 17, 57, 25]
 
-    #Permut the given block using the given table
-    #Перемешивает блок в соотвествии с таблицей
+    """ Функция преобразования списка по номерам в заданном списке:
+        Аргументы:
+            block - преобразуемый список [k,l,m..n];
+            table - список, в котором аргументы - последовательность номеров для нового списка; тип аргументов - int
+        Возвращает новый список в соотвествии с номерами из заданного списка:
+        Пример:    
+            [k,l,m,s..d,n] [3,2,1..0,N,N-1] преобразует в [s,m,l..k,n,d]
+        """
     def permut(self, block, table):
         return [block[x-1] for x in table]
 
-    """Converting a string into a list of bit"""
-    #Преобразует строку в битовую последовательность
+    """ Функция преобразования текста в список последовательности битов, составляющих этот текст
+        Аргументы:
+            text_original - текст; тип - str
+        Возвращает список последовательности битов:
+            [k,l,m..n], где k,l, m, n = 0 or 1
+        Converting a string into a list of bit"""
     def string_to_byte(self, text_original):
         string = [bin(symb)[2:] if isinstance (symb,int) else bin(ord(symb))[2:] for symb in text_original]
         bitList = list()
@@ -125,8 +135,11 @@ class des():
                         bitList.append(int(bit))                    
         return bitList
 
-    """Converting a list of bit into a string"""
-    #Преобразует битовую последовательность в строку
+    """ Функция преобразования из списка последовательности битов в текст:
+        Аргументы:
+            list_of_byte - список [k,l,m..n], где k,l,m..n = 0 or 1; тип аргументов - int
+        Возвращает текст типа str
+    Converting a list of bit into a string"""
     def byte_to_string(self,list_of_byte):
         text_encrypt = ''
         for i in range(0, len(list_of_byte), 8):
