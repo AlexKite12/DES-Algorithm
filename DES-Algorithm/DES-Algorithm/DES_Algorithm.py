@@ -179,10 +179,20 @@ class des():
         return self.byte_to_string(text_end)
 
     #Разделяет лист на блок листов нужной длины
+    """ Функция разделения листа на блоки с заданной длиной:
+        Аргументы:
+            list - список [k,l,m..n]
+            step - число, отражающее длину будущих внутренних списков
+        Возвращает список, содержащий внутренние списки:
+            [[k,l,m..d],[q,w,e..r], .. [s,g,f,..n]]"""
     def seperation_list(self,lst, step):
         return [lst[x:x+step] for x in range(0,len(lst),step)]
 
-    #Объединяет блоки в листе
+    """ Функция объединения внутренних листов
+        Аргументы:
+            block - [[k,l,m..n],[q,w,e..r], .. [s,d,f,..g]]
+        Возвращает:
+            [k,l,m,..n,q,w,e,..r..g]"""
     def combine_blocks(self, block):
         cb = []
         for b in block:
@@ -193,7 +203,11 @@ class des():
                 cb.append(x)
         return cb
 
-    """возвращает лист [B[0]B[1]..B[8]]"""
+    """ Функция f в преобразовании Фейстеля
+        Аргументы:
+            bit - список [k,l,m..n],где k,l,m,..n - 0 or 1
+            key - аналогичный список
+        Возвращает лист [B[0]B[1]..B[8]]"""
     def F_function(self,bit,key):
         new_bit = self.permut(bit,self.E)
         new_key = key 
@@ -210,7 +224,13 @@ class des():
             s_nb_row = s[nb_row]
             S.append(self.int_to_bit(s_nb_row[nb_column],4))
         return self.permut(self.combine_blocks(S), self.P)
-        
+    
+    """ Функция генерирования ключа
+        Аргументы:
+            key - список [k,l,m..n] 
+            iteration - число, определяющее номер итерации; тип - int
+        Возвращает список длиной 32:
+            [q,w,e..r]"""
     def generate_key(self, key, iteration):
         new_key = self.permut(key,self.G)
         c,d = self.seperation_list(new_key,28)
@@ -221,6 +241,11 @@ class des():
     def shift(self, c, d, n): 
         return c[n:] + c[:n], d[n:] + d[:n]
 
+    """ Функция логического сложения по модулю 2 двух списков 
+        Аргументы:
+            list_one, list_two - список формата [1,2,3..N-1, N], тип аргументов списка - int
+        Возвращает новый список [k, l, m, n..N-1, N] или печатает 'Error'и возвращает None, если длина списков разная:
+            [1,2,3] [1,2,3] преобразуются в [0,0,0]"""
     def xor(self,list_one, list_two):
         s = []
         if len(list_one) == len(list_two):
@@ -228,6 +253,15 @@ class des():
         else :
             print("Error: ")
 
+    """ Функция преобразования числа в последовательность битов заданной длины
+        Аргументы:
+            number - переданное число, тип числа - int
+            length - число, отражающее длину возвращаемого списка битов, тип числа - int:
+        Возвращает список [k,l,m..n], тип аргументов - int
+        Пример:
+            число 3 с длиной 8 преобразется в [0, 0, 0, 0, 0, 0, 1, 1]            
+            Если количество битов в числе превышает заданную длину, возвращено будет реальное количество битов:
+                число 256 с длиной 8 преобразуется в [1, 0, 0, 0, 0, 0, 0, 0, 0]"""
     def int_to_bit(self,number, length):
         string = bin(number)[2:]
         string = str(string).zfill(length)
@@ -238,8 +272,11 @@ class des():
             bitList.append(int(byte))
         return bitList
 
+from random import *
 class cbc(des):
-    pass
+    def __init__(self):
+        self.C_text = ''.join(SystemRandom().choice(ascii_uppercase + digits) for _ in range(8))
+        return super().__init__()
 
 if __name__ == '__main__':
     key = "secret_k"
