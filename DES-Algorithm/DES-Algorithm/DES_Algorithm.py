@@ -150,6 +150,8 @@ class des():
     def encrypt(self,text,key):
         text_end = list()
         btlist = self.string_to_byte(text) #преобразует текст в битовую последовательность
+        if len(btlist)%64 != 0:
+            btlist.append(1)
         while len(btlist)%64 != 0: #расширяет битовую последовательность 0, если длина не кратна 64
             btlist.append(0)
         bit_block = []
@@ -191,7 +193,6 @@ class des():
             right_list.clear()
         return self.byte_to_string(text_end)
 
-    #Разделяет лист на блок листов нужной длины
     """ Функция разделения листа на блоки с заданной длиной:
         Аргументы:
             list - список [k,l,m..n]
@@ -250,7 +251,13 @@ class des():
         c,d = self.shift(c,d,self.SHIFT[iteration])
         return self.permut(c + d, self.H)
 
-    #сдвиг листа на определенное значение
+    """ Функция сдвига списков вправо на n значений:
+        Аргументы:
+            с, d - списки [k,l,m..n]
+            n - число, на которое сдвигаются знаения
+        Возвращает два новых списка
+        Пример:
+            [k,l,m..n] [s,d,f..g] 2 преобразует в [m..n,k,l] [f..g,s,d]"""
     def shift(self, c, d, n): 
         return c[n:] + c[:n], d[n:] + d[:n]
 
@@ -286,17 +293,93 @@ class des():
         return bitList
 
 from random import *
+class ecb(des):
+    def __init__(self):
+        self.block_numbers = {a**2 : a for a in range(64)}
+        return super().__init__()
+    
+    def encrypt(self, text, key, block_length):
+        return self.crypt(text, key, 'Encrypt', block_length)
+
+    def decrypt(self, cipher_text,key, block_length):
+        return self.crypt(cipher_text, key, 'Decrypt', block_length)
+
+    def crypt(self, text, key, cr = 'Encrypt', b_number = 2):
+        text_end = ''
+        new_key = key
+
+        #TODO
+        #!!!!!!!!!!!!!
+        #b_number = [numbers for numbers in [self.block_numbers.get(i) for i in range (len(text)-1, len(text)*10)] if numbers != None][0]
+        #if b_number == []:
+            #b_number = 8
+
+
+        new_text = self.seperation_list (text, b_number)
+        if cr == 'Encrypt':
+            for txt in new_text:
+                text_end += des.encrypt(self, txt, new_key)
+        else:
+            for txt in new_text:
+                text_end += des.decrypt(self, txt, new_key)
+        return text_end
+        
+        #text_block
+
+
 class cbc(des):
     def __init__(self):
-        self.C_text = ''.join(SystemRandom().choice(ascii_uppercase + digits) for _ in range(8))
+        self.C = []#[self.string_to_byte(SystemRandom().choice(ascii_uppercase + digits) for _ in range(8))] #Начальная инициализация вектора C 64 битами
         return super().__init__()
+
+    def crypt(self, text, key, cr = 'Encrypt'):
+        text_end = list()
+        btlist = self.string_to_byte(text) #преобразует текст в битовую последовательность
+        while len(btlist)%64 != 0: #расширяет битовую последовательность 0, если длина не кратна 64
+            btlist.append(0)
+        bit_block = []
+        for btBlock in self.seperation_list(btlist, 64):#разбивает битовую последовательность на 64 битовые блоки
+            bit_block.append(self.permut(btBlock, self.IP))
+        self.password = self.string_to_byte(key[:64])#преобразует пароль в 56 битовую последовательность
+        for _ in range(len(bit_block)):
+            self.C.append(self.string_to_byte(SystemRandom().choice(ascii_uppercase + digits) for _ in range(8)))
+        for i in range(len(bit_block)):
+            new_block = self.xor(block[i],self.C[i])
+            left_list, right_list = list(), list()
+            left,right = self.seperation_list(block,32)
+            left_list.append(left)
+            right_list.append(right)
+            for j in range(16):
+                if cr == 'Encrypt':
+                    left_list.append(right_list[j])            
+                    right_list.append(self.xor(left_list[j], self.F_function(right_list[j], self.generate_key(self.password,j))))
+            text_end.extend(self.permut(self.combine_blocks([left_list[-1],right_list[-1]]), self.IP_1))
+        return self.byte_to_string(text_end)
+
+    def encrypt(self, text, key):
+        return self.crypt(text, key, 'Encrypt')
+
+    def decrypt(self, cipher_text,key):
+        print("Расшифровка!!!!!!!!!")
+        return self.crypt(cipher_text, key, 'Decrypt')
 
 if __name__ == '__main__':
     key = "secret_k"
-    textD= "hello world"
+    textD= "helloo"
     d = des()
     r = d.encrypt(textD,key)
     k = d.decrypt(r,key)
-    print("Original text: ",textD)
-    print("Cipher text: ",r)
-    print("Decrypt text: ",k)
+    textECB = "I think I'm drowning Asphyxiated I wanna break this spell That you've created You're something beautiful A contradiction I wanna play the game I want the friction"
+    elcb = ecb()
+    elcb_r = elcb.encrypt(textECB, key, 8)
+    elcb_k = elcb.decrypt(elcb_r, key, 8)
+    #print("Original text: ",textD)
+    #print("Cipher text: ",r)
+    #print("Decrypt text: ",k)
+
+    print(len(textD))
+    print(len(r))
+
+    print("Original text:\n ",textECB)
+    print("Cipher text:\n ",elcb_r)
+    print("Decrypt text:\n ",elcb_k)
