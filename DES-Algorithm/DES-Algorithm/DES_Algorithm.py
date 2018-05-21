@@ -309,11 +309,7 @@ class ecb(des):
         new_key = key
 
         #TODO
-        #!!!!!!!!!!!!!
-        #b_number = [numbers for numbers in [self.block_numbers.get(i) for i in range (len(text)-1, len(text)*10)] if numbers != None][0]
-        #if b_number == []:
-            #b_number = 8
-
+        #Check TODO (down)
 
         new_text = self.seperation_list (text, b_number)
         if cr == 'Encrypt':
@@ -323,8 +319,6 @@ class ecb(des):
             for txt in new_text:
                 text_end += des.decrypt(self, txt, new_key)
         return text_end
-        
-        #text_block
 
 
 class cbc(des):
@@ -383,3 +377,11 @@ if __name__ == '__main__':
     print("Original text:\n ",textECB)
     print("Cipher text:\n ",elcb_r)
     print("Decrypt text:\n ",elcb_k)
+
+
+    """ TODO:
+            class ecb
+                method crypt:
+                    Error:
+                        ecb.encrypt(text, key, 8) - True
+                        ecb.encrypt(text, key ,12) - False"""
