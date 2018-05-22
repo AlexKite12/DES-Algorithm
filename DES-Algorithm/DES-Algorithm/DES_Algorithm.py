@@ -1,3 +1,6 @@
+def generate_BBS():
+    pass
+
 class des():
     def __init__(self):
         self.text = list()
@@ -357,29 +360,122 @@ class cbc(des):
         print("Расшифровка!!!!!!!!!")
         return self.crypt(cipher_text, key, 'Decrypt')
 
+
+class gost_28147_89(des):
+    def __init__(self):
+        self.S_text = ["C	4	6	2	A	5	B	9	E	8	D	7	0	3	F	1",
+	                    "6	8	2	3	9	A	5	C	1	E	4	7	B	D	0	F",
+	                    "B	3	5	8	2	F	A	D	E	1	7	4	C	9	6	0",
+	                    "C	8	2	1	D	4	F	6	7	0	A	5	3	E	9	B",
+	                    "7	F	5	A	8	1	6	D	0	9	3	E	B	4	2	C",
+	                    "5	D	F	6	9	2	C	A	B	7	8	1	4	3	E	0",
+	                    "8	E	2	5	6	9	1	C	F	4	B	0	D	A	3	7",
+	                    "1	7	E	D	0	5	8	3	4	F	A	6	9	C	B	2"]
+        self.S = []
+        for i in [s.split('	') for s in self.S_text]:
+            s_box = []
+            for j in i:
+                s_box.append(int(j,16) + 1)
+            self.S.append(s_box)
+        return super().__init__()
+
+    def encrypt(self, text, key):
+        return self.crypt(text, key, 'Encrypt')
+
+    def decrypt(self, cipher_text,key):
+        return self.crypt(cipher_text, key, 'Decrypt')
+
+    def crypt(self, text,key, cr = 'Encrypt'):
+        text_end = list()
+        btlist = self.string_to_byte(text) #преобразует текст в битовую последовательность
+        if len(btlist)%64 != 0:
+            btlist.append(1)
+        while len(btlist)%64 != 0: #расширяет битовую последовательность 0, если длина не кратна 64
+            btlist.append(0)
+        bit_block = self.seperation_list(btlist, 64)
+        new_key = key[:32] if len(key) >= 32 else key + '0' * (32 - len(key))
+        self.password = self.seperation_list(self.string_to_byte(new_key),32)#преобразует пароль в 256 битовую последовательность (32 символа по 8 байт)
+
+        for block in bit_block:
+            left_list, right_list = list(), list()
+            left,right = self.seperation_list(block,32)
+            left_list.append(left)
+            right_list.append(right)
+            for i in range(32):
+                if cr == 'Encrypt':
+                    left_list.append(right_list[i])            
+                    if i < 24:
+                        right_list.append(self.xor(left_list[i], self.F_function(right_list[i], self.password[i%8])))                     
+                    else:
+                        right_list.append(self.xor(left_list[i], self.F_function(right_list[i], self.password[7 - i%8])))
+                else:
+                    #left_list.append(right_list[i])            
+                    if i < 8:
+                        left_list.append(self.xor(right_list[i], self.F_function(left_list[i], self.password[i%8])))
+                        #right_list.append(self.xor(left_list[i], self.F_function(right_list[i], self.password[i%8])))
+                    else:
+                        left_list.append(self.xor(right_list[i], self.F_function(left_list[i], self.password[7 - i%8])))
+                        #right_list.append(self.xor(left_list[i], self.F_function(right_list[i], self.password[7 - i%8])))
+                    right_list.append(left_list[i])     
+            text_end.extend(self.combine_blocks([left_list[-1],right_list[-1]]))
+        return self.byte_to_string(text_end)
+
+    def F_function(self, bit, key):
+        sum =  int(''.join([str(bit[j]) for j in range(len(bit))]),2) + int(''.join([str(key[j]) for j in range(len(key))]),2)
+        if sum < 2**32:
+            new_r =  self.seperation_list(self.int_to_bit(sum,32),4)
+            new_s = []
+            for i in range(len(new_r)):
+                new_s.append(self.permut(new_r[i],self.S[i]))            
+            new_S = self.combine_blocks(new_s)
+            return new_S[11:] + new_S[:11]
+        else:
+            new_r =  self.seperation_list(self.int_to_bit(sum % (2**32),32),4)
+            new_s = []
+            for i in range(len(new_r)):
+                new_s.append(self.permut(new_r[i],self.S[i]))
+            new_S = self.combine_blocks(new_s)
+            return new_S[11:] + new_S[:11]
+        #return super().F_function(bit, key)
+
+    def permut(self, block, table):
+        return self.int_to_bit(table[int(''.join([str(block[j]) for j in range(len(block))]),2)] - 1,4)
+
 if __name__ == '__main__':
     key = "secret_k"
-    textD= "helloo"
-    d = des()
-    r = d.encrypt(textD,key)
-    k = d.decrypt(r,key)
+    textD= "hello my freund"
     textECB = "I think I'm drowning Asphyxiated I wanna break this spell That you've created You're something beautiful A contradiction I wanna play the game I want the friction"
+
+    d = des()
+    r = d.encrypt(textECB,key)
+    k = d.decrypt(r,key)
     elcb = ecb()
     elcb_r = elcb.encrypt(textECB, key, 8)
     elcb_k = elcb.decrypt(elcb_r, key, 8)
-    #print("Original text: ",textD)
-    #print("Cipher text: ",r)
-    #print("Decrypt text: ",k)
 
-    print(len(textD))
-    print(len(r))
+    gst = gost_28147_89()
+    gst_r = gst.encrypt(textD,key)
+    gst_k = gst.decrypt(gst_r, key)
 
-    print("Original text:\n ",textECB)
-    print("Cipher text:\n ",elcb_r)
-    print("Decrypt text:\n ",elcb_k)
+    print("Original text: ",textECB)
+    print("Cipher text: ",r)
+    print("Decrypt text: ",k)
 
+    #print("Original text:\n ",textECB)
+    #print("Cipher text:\n ",elcb_r)
+    #print("Decrypt text:\n ",elcb_k)
+
+    print("\n")
+    print("Original text: ",textD)
+    print("Cipher text: ",gst_r)
+    print("Decrypt text: ",gst_k)
 
     """ TODO:
+            class des
+                method encrypt/decrypt:
+                    Error:
+                        self.password = self.string_to_byte(key[:64])#преобразует пароль в 56 битовую последовательность (8 символов по 8 бит = 64)
+
             class ecb
                 method crypt:
                     Error:
